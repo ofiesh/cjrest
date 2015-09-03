@@ -1,7 +1,13 @@
 (ns cjrest.core-test
   (:require [clojure.test :refer :all]
-            [cjrest.core :refer :all]))
+            [cjrest.core :as c]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(def foo "http://google.com")
+
+
+
+(macroexpand '(c/defservice foo
+               (foo
+                (GET get-food :id))))
+
+(macroexpand '(c/rest-method get-food foo foo GET :id))
