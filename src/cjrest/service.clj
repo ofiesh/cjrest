@@ -47,22 +47,34 @@
                           (flatten [(str @(resolve service) "/" resource-name)
                                     params]))
                method (symbol-to-keyword (first endpoint))
-               symbol-params (map #(-> % name symbol) params)]
+               symbol-params (map #(-> % name symbol) params)
+               param-map (into {} (map (fn [param] {(keyword param)
+                                               param})
+                                  symbol-params))]
            `(def ~(second endpoint)
-              (fn-with-args
-               ~symbol-params
-               (do-request
-                (request
-                 (replace-path-params
-                  ~url
-                  ~(into {} (map (fn [param] {(keyword param)
-                                              param})
-                                 symbol-params)))))))))))
+              (with-meta
+                (fn
+                  ([~@symbol-params]
+                   (do-request
+                    (request
+                     (replace-path-params
+                      ~url
+                      ~param-map)
+                     :method ~method)))
+                  ([body# ~@symbol-params]
+                   (do-request
+                    (request
+                     (replace-path-params
+                      ~url
+                      ~param-map)
+                     :method ~method
+                     :body body#))))
+                {:url ~url :params [~@params] :method ~method}))))))
 
 (defservice json
   (posts
-   (GET get-posts :id)
-   (POST save-food :id))
+   (GET get-posts :id :name)
+   (POST save-food))
   (nutrient
    (DELETE delete-nutrient :id)
    (POST save-nutrient :id)))
