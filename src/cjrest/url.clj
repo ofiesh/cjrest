@@ -10,7 +10,7 @@ e.g. /foobar & :id :name -> /foobar/id/:id/name/:name"
    (reduce
     str
     (map
-     #(str "/" (name %) "/" (str %))
+     #(str "/" (name %) "/" %)
      params))))
 
 (defn replace-path-params
