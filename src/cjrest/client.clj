@@ -37,10 +37,6 @@
    :method method
    :params params})
 
-(defn do-request
-  [endpoint body param-map]
-  (dispatch-request (make-request endpoint body param-map)))
-
 (defn make-request
   [endpoint body param-map]
   (request (replace-path-params
@@ -49,6 +45,10 @@
                param-map)
               :method (:method endpoint)
               :body body))
+
+(defn do-request
+  [endpoint body param-map]
+  (dispatch-request (make-request endpoint body param-map)))
 
 (defmacro def-method
   [method]
@@ -61,22 +61,27 @@
            meta# {:params
                  (into [] (map  #(keyword %) params#))
                  :method (-> '~method lower-case keyword)}]
-       `(with-meta
-          (fn request-anon
-            [~'endpoint#]
-            (def ~name#
-              (with-meta
-                (fn method-anon
-                  ~@(remove
-                    nil?
-                    (list
-                     `([~@params#]
-                      (do-request ~'endpoint#  nil ~param-map#))
-                     (if (= :post (:method meta#))
+       `(fn request-anon
+          [~'service-var# ~'resource#]
+          (let [~'endpoint#
+                (build-endpoint
+                 ~'service-var#
+                 ~'resource#
+                 ~(:method meta#)
+                 ~(:params meta#))]
+             (def ~name#
+               (with-meta
+                 (fn method-anon
+                   ~@(remove
+                      nil?
+                      (list
+                       `([~@params#]
+                         (do-request ~'endpoint#  nil ~param-map#))
+                       (if (= :post (:method meta#))
                          `([~'body# ~@params#]
                            (do-request ~'endpoint# ~'body# ~param-map#))))))
-                ~meta#)))
-          ~meta#))))
+                 ~meta#))
+            )))))
 
 (defn resource
   [res & methods]
@@ -97,14 +102,24 @@
 (def-method GET)
 (def-method POST)
 (def-method DELETE)
-(def-method UPDATE)
+(def-method PUT)
 
+(def json "http://jsonplaceholder.typicode.com/")
 
+(service #'json
+         (resource :post
+                   (GET get-post [id])))
 
+(defmacro defresource
+  [resource service-var]
+  (let [fubar (keyword resource)]
+    `(defmacro ~resource
+       [& endpoints#]
+       `(do
+          ~(for [endpoint# endpoints#]
+             `(~endpoint# ~~(keyword resource) ~~service-var))
+          ))))
 
+(defresource food #'json)
 
-
-
-
-
-
+(clojure.pprint/pprint (macroexpand-1 '(food (GET v [id]))))
