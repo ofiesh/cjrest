@@ -22,6 +22,7 @@
   "executes the result from (request)"
   [request] 
   (let [body (:body request)]
+    (println "cjrest: requesting " request)
     (json/read-str
      (:body
       (((:method request) request-methods)
@@ -58,17 +59,16 @@
            (into {} (map (fn [param#]
                            {(keyword param#) param#})
                          params#))
-           meta# {:params
-                 (into [] (map  #(keyword %) params#))
-                 :method (-> '~method lower-case keyword)}]
+           params-key# (into [] (map  #(keyword %) params#))
+           method# (-> '~method lower-case keyword)]
        `(fn request-anon
           [~'service-var# ~'resource#]
           (let [~'endpoint#
                 (build-endpoint
                  ~'service-var#
                  ~'resource#
-                 ~(:method meta#)
-                 ~(:params meta#))]
+                 ~method#
+                 ~params-key#)]
              (def ~name#
                (with-meta
                  (fn method-anon
@@ -77,10 +77,10 @@
                       (list
                        `([~@params#]
                          (do-request ~'endpoint#  nil ~param-map#))
-                       (if (= :post (:method meta#))
+                       (if (= :post method#)
                          `([~'body# ~@params#]
                            (do-request ~'endpoint# ~'body# ~param-map#))))))
-                 ~meta#))
+                 ~'endpoint#))
             )))))
 
 (defn resource

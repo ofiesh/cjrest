@@ -1,7 +1,8 @@
 (ns cjrest.service
   (:require [compojure.core :refer [GET POST DELETE PUT]]
             [clj-http.client :as client]
-            [cjrest.client :as c]))
+            [cjrest.client :as c]
+            [ring.util.response :refer [response]]))
 
 (def request-methods
   {:get (fn [url func] (GET url [] func))
@@ -12,20 +13,17 @@
 (defn consume-endpoint
   [endpoint func]
   (let [endpoint-meta (meta endpoint)]
-    (fn [req]
-      (let [params (:params req)]
-        (apply func (map #(% params) (:params endpoint-meta)))))))
-
-
-
-(def json "http://jsonplaceholder.typicode.com")
-
-(c/defresource post #'json)
-
-(post
- (c/GET v [id bar]))
-
-(def v2 (consume-endpoint v #(println %1 %2)))
-
-
-
+    (((:method endpoint-meta) request-methods)
+     (:path endpoint-meta)
+     (fn [req]
+       (let [params (:params req)
+             body (:body req)]
+         (response
+          (apply func
+                 (remove nil?
+                         `(~(if (map? body) body)
+                           ~@(map #(% params) (:params endpoint-meta)))))))))))
+(defn consume-endpoints
+  [& endpoints]
+  (for [endpoint endpoints]
+    (consume-endpoint (first endpoint) (second endpoint))))
