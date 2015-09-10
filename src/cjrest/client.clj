@@ -116,10 +116,11 @@
     `(defmacro ~resource
        [& endpoints#]
        `(do
-          ~(for [endpoint# endpoints#]
-             `(~endpoint# ~~(keyword resource) ~~service-var))
+          ~@(for [endpoint# endpoints#]
+             `(~endpoint# ~~service-var ~~(keyword resource)))
           ))))
 
 (defresource food #'json)
 
-(clojure.pprint/pprint (macroexpand-1 '(food (GET v [id]))))
+;(clojure.pprint/pprint (macroexpand-1 '(food (GET v [id]))))
+

@@ -14,20 +14,18 @@
   (let [endpoint-meta (meta endpoint)]
     (fn [req]
       (let [params (:params req)]
-        (println (:params endpoint-meta))
-        (println (map #(% params) (:params endpoint-meta)))
         (apply func (map #(% params) (:params endpoint-meta)))))))
 
 
 
-(def json "http://jsonplaceholder.typicode.com/")
+(def json "http://jsonplaceholder.typicode.com")
 
-(c/service #'json
-           (c/resource :post
-                    (c/GET get-post [id name])
-                    (c/POST save-post [])))
+(c/defresource post #'json)
 
-(def v (consume-endpoint get-post #(println %1 %2)))
+(post
+ (c/GET v [id bar]))
+
+(def v2 (consume-endpoint v #(println %1 %2)))
 
 
-(defmacro ho [] `(println ~&env))
+
