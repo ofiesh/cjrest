@@ -7,4 +7,5 @@
                  [compojure "1.4.0"]
                  [ring/ring-core "1.4.0"]
                  [clj-http "2.0.0"]
-                 [org.clojure/data.json "0.2.6"]])
+                 [org.clojure/data.json "0.2.6"]
+                 [clout "2.1.2"]])

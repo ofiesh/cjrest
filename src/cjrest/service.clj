@@ -1,29 +1,63 @@
 (ns cjrest.service
-  (:require [compojure.core :refer [GET POST DELETE PUT]]
-            [clj-http.client :as client]
-            [cjrest.client :as c]
-            [ring.util.response :refer [response]]))
+  (:require [compojure.core :refer [make-route]]
+            [cjrest.url :refer [build-url]]
+            [ring.util.response :refer [response]]
+            [clout.core :refer [route-compile]]))
 
-(def request-methods
-  {:get (fn [url func] (GET url [] func))
-   :post (fn [url func] (POST url [] func))
-   :delete (fn [url func] (DELETE url [] func))
-   :put (fn [url func] (PUT url [] func))})
 
-(defn consume-endpoint
+(defn serve-endpoint-fn
+  [params func]
+  (fn foobar [req]
+    (let [body (:body req)
+          req-params (:params req)]
+      (apply func
+             (remove nil?
+                     `(~(if (map? body) body)
+                       ~@(map #(% req-params) params)))))))
+
+
+(defmacro compile-route
+  [method path params func]
+  (let [keyword-params
+        (into [] (map #(keyword %) params))]
+    `(let [foo# (serve-endpoint-fn
+                 ~keyword-params
+                 ~func)]
+       (make-route
+        ~method
+        ~(route-compile (apply build-url `(~path ~@keyword-params)))
+        foo#))))
+
+(defmacro GET
+  [path params func]
+  `(compile-route :get ~path ~params ~func))
+
+(defmacro POST
+  [path params func]
+  `(compile-route :get ~path ~params ~func))
+
+(defmacro PUT
+  [path params func]
+  `(compile-route :get ~path ~params ~func))
+
+(defmacro DELETE
+  [path params func]
+  `(compile-route :get ~path ~params ~func))
+
+(defn serve-endpoint
   [endpoint func]
   (let [endpoint-meta (meta endpoint)]
-    (((:method endpoint-meta) request-methods)
+    (make-route
+     (:method endpoint-meta)
      (:path endpoint-meta)
-     (fn [req]
-       (let [params (:params req)
-             body (:body req)]
-         (response
-          (apply func
-                 (remove nil?
-                         `(~(if (map? body) body)
-                           ~@(map #(% params) (:params endpoint-meta)))))))))))
-(defn consume-endpoints
-  [& endpoints]
-  (for [endpoint endpoints]
-    (consume-endpoint (first endpoint) (second endpoint))))
+     (serve-endpoint-fn
+      (:params endpoint-meta)
+      func))))
+
+((compile-route :get "/foo" [id foo] #(println %1 %2))
+ {:request-method :get
+  :uri "/foo/id/hello/foo/bar"})
+(macroexpand '(GET "/" [:id] #(println %)))
+
+
+
