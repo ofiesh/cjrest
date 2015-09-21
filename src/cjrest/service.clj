@@ -34,15 +34,15 @@
 
 (defmacro POST
   [path params func]
-  `(compile-route :get ~path ~params ~func))
+  `(compile-route :post ~path ~params ~func))
 
 (defmacro PUT
   [path params func]
-  `(compile-route :get ~path ~params ~func))
+  `(compile-route :put ~path ~params ~func))
 
 (defmacro DELETE
   [path params func]
-  `(compile-route :get ~path ~params ~func))
+  `(compile-route :delete ~path ~params ~func))
 
 (defn serve-endpoint
   [endpoint func]
