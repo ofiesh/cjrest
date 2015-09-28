@@ -23,13 +23,13 @@
   [request] 
   (let [body (:body request)]
     (println "cjrest: requesting " request)
-    (json/read-str
-     (:body
-      (((:method request) request-methods)
-       (:url request)
-       {:body (if (not (nil? body))
-                (json/write-str body))
-        :content-type "application/json"})))))
+    (:body
+     (((:method request) request-methods)
+      (:url request)
+      {:body (if (not (nil? body))
+               (json/write-str body))
+       :content-type "application/json"
+       :as :json}))))
 
 (defn build-endpoint
   [service-url resource method params]
@@ -83,32 +83,12 @@
                  ~'endpoint#))
             )))))
 
-(defn resource
-  [res & methods]
-  {:resource res
-   :methods methods})
-
-(defn service
-  [service-url & resources]
-  (for [resource resources
-        method (:methods resource)]
-    (let [method-meta (meta method)]
-      (method
-       (build-endpoint service-url
-                       (:resource resource)
-                       (:method method-meta)
-                       (:params method-meta))))))
-
 (def-method GET)
 (def-method POST)
 (def-method DELETE)
 (def-method PUT)
 
 (def json "http://jsonplaceholder.typicode.com/")
-
-(service #'json
-         (resource :post
-                   (GET get-post [id])))
 
 (defmacro defresource
   [resource service-var]
